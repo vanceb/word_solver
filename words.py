@@ -367,34 +367,37 @@ class codeword(words):
 
 
 def main():
+    # Valid index options
+    valid = ["plain", "anagram", "crossword", "codeword"]
+
     # Use command line arguments
     parser = argparse.ArgumentParser()
     # Dictionary file with default
     parser.add_argument("-d",
                         "--dictionary",
                         default='dictionary.txt',
-                        help="Dictionary file"
+                        help='''
+    The file to use as the dictionary.  This defaults to dictionary.txt
+    '''
                         )
     # Which kind of index and search do we want
-    parser.add_argument("type",
-                        help="Type of index you require",
+    parser.add_argument("search_type",
+                        help="Type of search you require",
+                        choices=valid
                         )
 
     # Parse the command line
     args = parser.parse_args()
 
-    # Valid index options
-    valid = ["plain", "anagram", "crossword", "codeword"]
-
-    if args.type in valid:
+    if args.search_type in valid:
         # Choose our index type based on user request
-        if args.type == "plain":
+        if args.search_type == "plain":
             indx = words()
-        if args.type == "anagram":
+        if args.search_type == "anagram":
             indx = anagram()
-        if args.type == "crossword":
+        if args.search_type == "crossword":
             indx = crossword()
-        if args.type == "codeword":
+        if args.search_type == "codeword":
             indx = codeword()
 
         # Load the words from the dictionary
