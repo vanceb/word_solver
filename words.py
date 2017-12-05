@@ -366,9 +366,75 @@ class codeword(words):
         return matches
 
 
+class cryptic(anagram):
+
+    def help_text(self):
+        print('''
+    Solve multi-word anagrams
+
+    Show possible solutions to multi-word anagrams often used in cryptic
+    crosswords
+
+    ''')
+
+    def __init__(self):
+        super().__init__()
+        # Generate an index referenced by word length
+        self._by_length = {}
+
+    def add_word(self, word):
+        '''
+        We need a different type of index...
+        '''
+        if len(word) in self._by_length:
+            self._by_length[len(word)].append(word)
+        else:
+            self._by_length[len(word)] = [word]
+
+    def show_index(self):
+        for i in sorted(self._by_length):
+            print(str(i) + ": " + str(len(self._by_length[i])))
+
+    def search(self, word_lengths, letters):
+        letters_list = list(letters.lower())
+        return self._r_search(word_lengths, letters_list)
+
+    def _r_search(self, word_lengths, letters):
+        if len(word_lengths) == 0:
+            # we have hit the bottom
+            return None
+        else:
+            length = word_lengths[0]
+            hits = []
+            # Get all words of the right length that could be spelt using the
+            # letters that remain
+            for word in self._by_length[length]:
+                # create a copy of the list...
+                letters_left = list(letters)
+                matched = True
+                for letter in word.lower():
+                    if letter in letters_left:
+                        letters_left.remove(letter)
+                    else:
+                        matched = False
+                        break
+                if matched:
+                    # Recurse
+                    results = self._r_search(word_lengths[1:], letters_left)
+                    if results is not None:
+                        # we are not at the bottom
+                        if len(results) != 0:
+                            # We did find next level matches
+                            for result in results:
+                                hits.append(word + " " + result)
+                    else:
+                        hits.append(word)
+            return hits
+
+
 def main():
     # Valid index options
-    valid = ["plain", "anagram", "crossword", "codeword"]
+    valid = ["plain", "anagram", "crossword", "codeword", "cryptic"]
 
     # Use command line arguments
     parser = argparse.ArgumentParser()
@@ -399,9 +465,16 @@ def main():
             indx = crossword()
         if args.search_type == "codeword":
             indx = codeword()
+        if args.search_type == "cryptic":
+            indx = cryptic()
 
         # Load the words from the dictionary
         indx.load_words(args.dictionary)
+
+        # DEBUG
+        if args.search_type == "cryptic":
+            indx.show_index()
+
         # Print the help for the type of search we want
         indx.help_text()
     else:
@@ -409,24 +482,43 @@ def main():
         parser.print_help()
         parser.exit()
 
+    results = []
     # Allow user to search interactively
     again = True
     # Loop until we want to exit
     while again:
-        # Give the user a search prompt
-        search_word = input(": ")
-        # If they just hit return signal quit
-        if search_word == "":
-            again = False
+        if args.search_type == "cryptic":
+            valid = False
+            while not valid:
+                letters = input("Please type anagram letters: ")
+                if letters == "":
+                    again = False
+                    break
+                else:
+                    w_lengths = input("Please input word lengths: ")
+                    word_lengths = [int(x) for x in w_lengths.split()]
+                    if len(letters) == sum(word_lengths):
+                        valid = True
+                    else:
+                        print("Word lengths don't match" +
+                              " the number of letters typed")
+            if valid:
+                results = indx.search(word_lengths, letters)
         else:
-            # Perform the search
-            results = indx.search(search_word)
-            if results is None or len(results) == 0:
-                print("Nothing found!")
+            # Give the user a search prompt
+            search_word = input(": ")
+            # If they just hit return signal quit
+            if search_word == "":
+                again = False
             else:
-                # Print out the results
-                for w in results:
-                    print(w)
+                # Perform the search
+                results = indx.search(search_word)
+        if results is None or len(results) == 0:
+            print("Nothing found!")
+        else:
+            # Print out the results
+            for w in results:
+                print(w)
 
 
 if __name__ == "__main__":
